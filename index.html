@@ -48,11 +48,11 @@
         .tag-week { color: var(--info); border-left: 4px solid var(--info); padding-left: 10px; margin-top: 20px; }
         .tag-weekend { color: var(--warning); border-left: 4px solid var(--warning); padding-left: 10px; margin-top: 20px; }
 
-        /* Modales */
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #181818; border: 1px solid #444; border-radius: 20px; padding: 25px; z-index: 1001; width: 90%; max-width: 400px; }
         .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; }
         
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; margin-top: 15px; }
+        .cal-day-name { font-size: 0.7rem; color: #777; font-weight: bold; padding-bottom: 5px; }
         .day-v { padding: 10px 0; cursor: pointer; border-radius: 5px; font-size: 0.9rem; }
         .day-v.active { background: white; color: black; font-weight: bold; }
 
@@ -87,6 +87,7 @@
                 <option value="all">Todo</option>
                 <option value="1">1 Mes</option>
                 <option value="3">3 Meses</option>
+                <option value="6">6 Meses</option>
                 <option value="12">1 Año</option>
             </select>
             <button class="btn-main btn-pdf" onclick="exportToPDF()">📄 PDF</button>
@@ -118,6 +119,10 @@
         <span id="cal-title" style="font-weight:bold;"></span>
         <button onclick="moveMonth(1)" style="color:white; background:none; border:none; cursor:pointer;">▶</button>
     </div>
+    <div class="cal-grid" id="cal-header">
+        <div class="cal-day-name">Do</div><div class="cal-day-name">Lu</div><div class="cal-day-name">Ma</div>
+        <div class="cal-day-name">Mi</div><div class="cal-day-name">Ju</div><div class="cal-day-name">Vi</div><div class="cal-day-name">Sá</div>
+    </div>
     <div class="cal-grid" id="cal-body"></div>
     <button class="btn-main btn-save" style="margin-top:20px" onclick="closeModals()">CERRAR</button>
 </div>
@@ -146,7 +151,6 @@
 </div>
 
 <script>
-    // CONFIGURACIÓN DE TU FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyBW2_C14i_5lw1yeuA0VXhE9brIrpedpEM",
         authDomain: "stats-23446.firebaseapp.com",
@@ -162,7 +166,6 @@
     let selDate = new Date().toISOString().split('T')[0];
     let viewDate = new Date();
 
-    // Sincronización en tiempo real
     database.ref('registros/').on('value', (snapshot) => {
         db = snapshot.val() || {};
         renderHistory();
@@ -181,8 +184,8 @@
             total: +document.getElementById('total-view').innerText
         };
         database.ref('registros/' + selDate).set(data)
-            .then(() => alert("✅ Datos sincronizados correctamente"))
-            .catch(() => alert("❌ Error: Revisa las REGLAS en Firebase"));
+            .then(() => alert("✅ Datos sincronizados"))
+            .catch(() => alert("❌ Error de conexión"));
     }
 
     function deleteRecord(d) {
@@ -203,7 +206,6 @@
         });
     }
 
-    // Funciones Calendario
     function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; if(id==='modal-cal') renderCal(); }
     function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(m => m.style.display='none'); }
 
@@ -212,9 +214,13 @@
         const title = document.getElementById('cal-title');
         body.innerHTML = '';
         title.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
+        
         const y = viewDate.getFullYear(), m = viewDate.getMonth();
-        const days = new Date(y, m+1, 0).getDate();
-        for(let d=1; d<=days; d++) {
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m+1, 0).getDate();
+
+        for(let i=0; i<firstDay; i++) { body.innerHTML += `<div></div>`; }
+        for(let d=1; d<=daysInMonth; d++) {
             const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             body.innerHTML += `<div class="day-v ${ds===selDate?'active':''}" onclick="pickDate('${ds}')">${d}</div>`;
         }
@@ -222,7 +228,6 @@
     function pickDate(d) { selDate = d; document.getElementById('label-fecha').innerText = d; closeModals(); }
     function moveMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCal(); }
 
-    // Exportar PDF con Rangos
     function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -235,13 +240,12 @@
             sortedDates = sortedDates.filter(d => new Date(d) >= cutoff);
         }
 
-        doc.text("REPORTE DE ASISTENCIA ORGANIZADO", 14, 20);
+        doc.text("REPORTE DE ASISTENCIA", 14, 20);
         const rows = sortedDates.map(d => [d, db[d].n, db[d].b, db[d].z, db[d].total]);
         doc.autoTable({ head: [['Fecha', 'Nat.', 'Bras.', 'Zoom', 'Total']], body: rows, startY: 30 });
-        doc.save(`Reporte_${filterVal}_meses.pdf`);
+        doc.save(`Reporte_Stats.pdf`);
     }
 
-    // Calculadora Simple
     let cExp = "";
     function cPress(v) { cExp += v; document.getElementById('calc-res').innerText = cExp; }
     function cClear() { cExp = ""; document.getElementById('calc-res').innerText = "0"; }
