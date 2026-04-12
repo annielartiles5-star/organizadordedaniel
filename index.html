@@ -3,57 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stats Master Pro</title>
+    <title>Stats Master Pro - Gold Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #050505;
-            --card: #111;
+            --bg: #000000;
+            --card: #151515;
             --accent: #ffffff;
-            --text: #eee;
-            --border: #222;
-            --week: #1a1a1a;
-            --weekend: #251a00;
+            --text: #ffffff;
+            --border: #333333;
+            --danger: #ff4444;
+            --info: #00d1ff;
+            --warning: #ffcc00;
         }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 600px; }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 15px; }
-
-        /* Calendario Estilo Foto */
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 1px solid #333; border-radius: 20px; padding: 20px; z-index: 1001; width: 90%; max-width: 350px; }
-        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 1000; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 650px; }
         
-        .cal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 0.8rem; }
-        .day-name { color: #555; font-weight: bold; padding-bottom: 5px; }
-        .day-cell { padding: 10px 0; cursor: pointer; border-radius: 5px; }
-        .day-cell:hover { background: #222; }
-        .day-cell.active { background: var(--accent); color: #000; font-weight: bold; }
+        /* Tipografía más visible */
+        h2 { font-size: 1.8rem; letter-spacing: 1px; margin-bottom: 20px; text-align: center; }
+        h3 { font-size: 1.2rem; margin: 25px 0 10px; padding-left: 10px; }
+        
+        .card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        /* Buscador */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-input { 
+            width: 100%; padding: 15px; background: #222; border: 2px solid var(--border); 
+            border-radius: 12px; color: white; font-size: 1.1rem; box-sizing: border-box;
+        }
+        .search-input:focus { border-color: var(--info); outline: none; }
+
+        /* Calendario y Botones */
+        .btn-main { 
+            width: 100%; padding: 18px; border-radius: 12px; border: none; 
+            font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; 
+        }
+        .btn-date { background: #222; color: white; border: 1px solid var(--border); margin-bottom: 15px; }
+        .btn-save { background: var(--accent); color: black; margin-top: 10px; }
+        .btn-save:active { transform: scale(0.98); }
+
+        /* Inputs de datos */
+        .grid-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-field label { display: block; font-size: 0.9rem; color: #aaa; margin-bottom: 8px; text-align: center; }
+        .stat-field input { 
+            width: 100%; padding: 15px; background: #222; border: 1px solid var(--border); 
+            border-radius: 10px; color: white; font-size: 1.3rem; text-align: center; 
+        }
+
+        .total-display { font-size: 3.5rem; font-weight: bold; text-align: center; margin: 15px 0; color: var(--accent); }
+
+        /* Tablas */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1a1a1a; border-radius: 12px; overflow: hidden; }
+        th { background: #252525; padding: 15px; text-align: left; font-size: 0.9rem; color: #888; }
+        td { padding: 15px; border-bottom: 1px solid #222; font-size: 1rem; }
+        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 5px 10px; }
+
+        /* Modales */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #181818; border: 1px solid #444; border-radius: 20px; padding: 25px; z-index: 1001; width: 90%; max-width: 400px; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; }
+        
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; margin-top: 15px; }
+        .day-n { color: #666; font-size: 0.8rem; font-weight: bold; }
+        .day-v { padding: 12px 0; cursor: pointer; border-radius: 8px; font-size: 1rem; }
+        .day-v:hover { background: #333; }
+        .day-v.active { background: white; color: black; font-weight: bold; }
 
         /* Calculadora */
-        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
-        .calc-screen { grid-column: span 4; background: #000; color: #fff; padding: 15px; text-align: right; font-size: 1.5rem; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px; }
-        .btn-calc { padding: 15px; background: #222; border: none; color: #fff; border-radius: 8px; cursor: pointer; }
-        .btn-calc.op { background: #333; }
+        .calc-display { background: #000; padding: 20px; font-size: 2rem; text-align: right; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .calc-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .btn-c { padding: 20px; background: #333; border: none; color: white; border-radius: 10px; font-size: 1.2rem; cursor: pointer; }
 
-        /* Inputs y Tabla */
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 15px 0; }
-        input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; color: #fff; box-sizing: border-box; }
-        label { font-size: 0.7rem; color: #777; text-transform: uppercase; }
-        
-        .section-title { font-size: 0.9rem; color: #ffcc00; margin: 20px 0 10px; border-left: 3px solid #ffcc00; padding-left: 10px; }
-        .week-title { color: #00ccff; border-left-color: #00ccff; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th { text-align: left; padding: 10px; color: #555; border-bottom: 1px solid #222; }
-        td { padding: 10px; border-bottom: 1px solid #1a1a1a; }
-        
-        .btn-main { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .btn-save { background: #fff; color: #000; }
-        .btn-calc-open { background: #222; color: #fff; margin-top: 10px; border: 1px solid #333; }
-        
-        .total-big { font-size: 2.5rem; text-align: center; margin: 10px 0; font-weight: 200; }
+        .tag-week { color: var(--info); border-left: 4px solid var(--info); }
+        .tag-weekend { color: var(--warning); border-left: 4px solid var(--warning); }
     </style>
 </head>
 <body>
@@ -61,187 +83,202 @@
 <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
 <div class="container">
+    <h2>CONTROL DE ASISTENCIA</h2>
+
     <div class="card">
-        <h2 style="text-align: center; font-weight: 200;">REGISTRO</h2>
-        <button class="btn-main" style="background: #1a1a1a; color: white; border: 1px solid #333;" onclick="openCalendar()">
-            📅 <span id="current-date-text">Seleccionar Fecha</span>
+        <button class="btn-main btn-date" onclick="openModal('modal-cal')">
+            📅 <span id="label-fecha">Seleccionar Fecha</span>
         </button>
 
-        <div class="grid-3">
-            <div><label>Nativos</label><input type="number" id="n" value="0" oninput="updateTotal()"></div>
-            <div><label>Brasileros</label><input type="number" id="b" value="0" oninput="updateTotal()"></div>
-            <div><label>Zoom</label><input type="number" id="z" value="0" oninput="updateTotal()"></div>
+        <div class="grid-stats">
+            <div class="stat-field">
+                <label>NATIVOS</label>
+                <input type="number" id="in-n" value="0" oninput="recalc()">
+            </div>
+            <div class="stat-field">
+                <label>BRASILEROS</label>
+                <input type="number" id="in-b" value="0" oninput="recalc()">
+            </div>
+            <div class="stat-field">
+                <label>ZOOM</label>
+                <input type="number" id="in-z" value="0" oninput="recalc()">
+            </div>
         </div>
 
-        <div class="total-big" id="total-display">0</div>
+        <div class="total-display" id="total-view">0</div>
         
-        <button class="btn-main btn-save" onclick="saveData()">GUARDAR REGISTRO</button>
-        <button class="btn-main btn-calc-open" onclick="openCalc()">CALCULADORA</button>
+        <button class="btn-main btn-save" onclick="saveRecord()">GUARDAR DATOS</button>
+        <button class="btn-main" style="margin-top:10px; background:#222; color:#fff;" onclick="openModal('modal-calc')">CALCULADORA</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="dateSearch" class="search-input" placeholder="🔍 Buscar fecha (ej: 2026-04-12)..." oninput="renderHistory()">
+    </div>
+
+    <div class="card" style="height: 250px;">
+        <canvas id="statsChart"></canvas>
     </div>
 
     <div class="card">
-        <canvas id="mainChart" style="max-height: 200px;"></canvas>
-    </div>
-
-    <div class="card">
-        <h3 class="section-title week-title">ENTRE SEMANA (Lun - Vie)</h3>
-        <table id="table-week">
-            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th></tr></thead>
+        <h3 class="tag-week">ENTRE SEMANA</h3>
+        <table id="tab-week">
+            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th><th></th></tr></thead>
             <tbody></tbody>
         </table>
 
-        <h3 class="section-title">FIN DE SEMANA (Sáb - Dom)</h3>
-        <table id="table-weekend">
-            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th></tr></thead>
+        <h3 class="tag-weekend">FIN DE SEMANA</h3>
+        <table id="tab-weekend">
+            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th><th></th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
 </div>
 
 <div id="modal-cal" class="modal">
-    <div class="cal-header">
-        <button onclick="changeMonth(-1)"><</button>
-        <span id="cal-month-year">Abril 2026</span>
-        <button onclick="changeMonth(1)">></button>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button onclick="moveMonth(-1)" class="btn-delete" style="color:white">◀</button>
+        <span id="cal-title" style="font-weight:bold; font-size:1.2rem;">Abril 2026</span>
+        <button onclick="moveMonth(1)" class="btn-delete" style="color:white">▶</button>
     </div>
-    <div class="days-grid" id="cal-grid">
-        <div class="day-name">Do</div><div class="day-name">Lu</div><div class="day-name">Ma</div>
-        <div class="day-name">Mi</div><div class="day-name">Ju</div><div class="day-name">Vi</div><div class="day-name">Sa</div>
-    </div>
+    <div class="cal-grid" id="cal-body"></div>
+    <button class="btn-main btn-save" style="margin-top:20px" onclick="closeModals()">CERRAR</button>
 </div>
 
 <div id="modal-calc" class="modal">
-    <div class="calc-screen" id="calc-screen">0</div>
-    <div class="calc-grid">
-        <button class="btn-calc op" onclick="clearCalc()">C</button>
-        <button class="btn-calc op" onclick="press('/')">/</button>
-        <button class="btn-calc op" onclick="press('*')">×</button>
-        <button class="btn-calc op" onclick="press('-')">-</button>
-        <button class="btn-calc" onclick="press('7')">7</button>
-        <button class="btn-calc" onclick="press('8')">8</button>
-        <button class="btn-calc" onclick="press('9')">9</button>
-        <button class="btn-calc op" onclick="press('+')">+</button>
-        <button class="btn-calc" onclick="press('4')">4</button>
-        <button class="btn-calc" onclick="press('5')">5</button>
-        <button class="btn-calc" onclick="press('6')">6</button>
-        <button class="btn-calc op" onclick="solve()">=</button>
-        <button class="btn-calc" onclick="press('1')">1</button>
-        <button class="btn-calc" onclick="press('2')">2</button>
-        <button class="btn-calc" onclick="press('3')">3</button>
-        <button class="btn-calc" onclick="press('0')">0</button>
+    <div class="calc-display" id="calc-res">0</div>
+    <div class="calc-btns">
+        <button class="btn-c" onclick="cClear()">C</button>
+        <button class="btn-c" onclick="cPress('/')">/</button>
+        <button class="btn-c" onclick="cPress('*')">×</button>
+        <button class="btn-c" onclick="cPress('-')">-</button>
+        <button class="btn-c" onclick="cPress('7')">7</button>
+        <button class="btn-c" onclick="cPress('8')">8</button>
+        <button class="btn-c" onclick="cPress('9')">9</button>
+        <button class="btn-c" style="background:var(--info)" onclick="cPress('+')">+</button>
+        <button class="btn-c" onclick="cPress('4')">4</button>
+        <button class="btn-c" onclick="cPress('5')">5</button>
+        <button class="btn-c" onclick="cPress('6')">6</button>
+        <button class="btn-c" style="background:var(--accent); color:black" onclick="cEval()">=</button>
+        <button class="btn-c" onclick="cPress('1')">1</button>
+        <button class="btn-c" onclick="cPress('2')">2</button>
+        <button class="btn-c" onclick="cPress('3')">3</button>
+        <button class="btn-c" onclick="cPress('0')">0</button>
     </div>
-    <button class="btn-main btn-calc-open" onclick="closeModals()">CERRAR</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('stats_v4')) || {};
-    let selectedDate = new Date().toISOString().split('T')[0];
+    let db = JSON.parse(localStorage.getItem('stats_v5')) || {};
+    let selDate = new Date().toISOString().split('T')[0];
     let viewDate = new Date();
-    let chart;
+    let myChart;
 
-    function openCalendar() { document.getElementById('modal-cal').style.display='block'; document.getElementById('overlay').style.display='block'; renderCalendar(); }
-    function openCalc() { document.getElementById('modal-calc').style.display='block'; document.getElementById('overlay').style.display='block'; }
-    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(el => el.style.display='none'); }
+    function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; if(id==='modal-cal') renderCal(); }
+    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(m => m.style.display='none'); }
 
-    // Lógica del Calendario
-    function renderCalendar() {
-        const grid = document.getElementById('cal-grid');
-        const monthYear = document.getElementById('cal-month-year');
-        grid.innerHTML = '<div class="day-name">Do</div><div class="day-name">Lu</div><div class="day-name">Ma</div><div class="day-name">Mi</div><div class="day-name">Ju</div><div class="day-name">Vi</div><div class="day-name">Sa</div>';
+    function renderCal() {
+        const body = document.getElementById('cal-body');
+        const title = document.getElementById('cal-title');
+        body.innerHTML = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'].map(d => `<div class="day-n">${d}</div>`).join('');
         
-        const y = viewDate.getFullYear();
-        const m = viewDate.getMonth();
-        monthYear.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
+        title.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
+        const y = viewDate.getFullYear(), m = viewDate.getMonth();
+        const start = new Date(y, m, 1).getDay();
+        const days = new Date(y, m+1, 0).getDate();
 
-        const firstDay = new Date(y, m, 1).getDay();
-        const daysInMonth = new Date(y, m+1, 0).getDate();
-
-        for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
-        for(let d=1; d<=daysInMonth; d++) {
-            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const className = dateStr === selectedDate ? 'day-cell active' : 'day-cell';
-            grid.innerHTML += `<div class="${className}" onclick="selectDate('${dateStr}')">${d}</div>`;
+        for(let i=0; i<start; i++) body.innerHTML += '<div></div>';
+        for(let d=1; d<=days; d++) {
+            const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            body.innerHTML += `<div class="day-v ${ds===selDate?'active':''}" onclick="pickDate('${ds}')">${d}</div>`;
         }
     }
 
-    function selectDate(date) {
-        selectedDate = date;
-        document.getElementById('current-date-text').innerText = date;
-        if(db[date]) {
-            document.getElementById('n').value = db[date].n;
-            document.getElementById('b').value = db[date].b;
-            document.getElementById('z').value = db[date].z;
-        } else {
-            document.getElementById('n').value = 0; document.getElementById('b').value = 0; document.getElementById('z').value = 0;
-        }
-        updateTotal();
-        closeModals();
+    function pickDate(d) {
+        selDate = d; document.getElementById('label-fecha').innerText = d;
+        const entry = db[d] || {n:0, b:0, z:0};
+        document.getElementById('in-n').value = entry.n;
+        document.getElementById('in-b').value = entry.b;
+        document.getElementById('in-z').value = entry.z;
+        recalc(); closeModals();
     }
 
-    function changeMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); renderCalendar(); }
+    function moveMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCal(); }
 
-    // Calculadora
-    let calcExpr = "";
-    function press(v) { calcExpr += v; document.getElementById('calc-screen').innerText = calcExpr; }
-    function clearCalc() { calcExpr = ""; document.getElementById('calc-screen').innerText = "0"; }
-    function solve() { try { calcExpr = eval(calcExpr).toString(); document.getElementById('calc-screen').innerText = calcExpr; } catch { clearCalc(); } }
-
-    function updateTotal() {
-        const n = +document.getElementById('n').value;
-        const b = +document.getElementById('b').value;
-        const z = +document.getElementById('z').value;
-        document.getElementById('total-display').innerText = n + b + z;
+    function recalc() {
+        const t = (+document.getElementById('in-n').value) + (+document.getElementById('in-b').value) + (+document.getElementById('in-z').value);
+        document.getElementById('total-view').innerText = t;
     }
 
-    function saveData() {
-        db[selectedDate] = {
-            n: +document.getElementById('n').value,
-            b: +document.getElementById('b').value,
-            z: +document.getElementById('z').value,
-            total: +document.getElementById('total-display').innerText
+    function saveRecord() {
+        db[selDate] = {
+            n: +document.getElementById('in-n').value,
+            b: +document.getElementById('in-b').value,
+            z: +document.getElementById('in-z').value,
+            total: +document.getElementById('total-view').innerText
         };
-        localStorage.setItem('stats_v4', JSON.stringify(db));
-        renderAll();
+        localStorage.setItem('stats_v5', JSON.stringify(db));
+        renderHistory();
+        alert("Guardado correctamente");
     }
 
-    function renderAll() {
-        const weekBody = document.querySelector('#table-week tbody');
-        const weekendBody = document.querySelector('#table-weekend tbody');
-        weekBody.innerHTML = ''; weekendBody.innerHTML = '';
+    function deleteRecord(d) {
+        if(confirm(`¿Eliminar registro del ${d}?`)) {
+            delete db[d];
+            localStorage.setItem('stats_v5', JSON.stringify(db));
+            renderHistory();
+        }
+    }
 
-        const dates = Object.keys(db).sort().reverse();
-        const chartData = { labels: [], totals: [] };
+    function renderHistory() {
+        const q = document.getElementById('dateSearch').value.toLowerCase();
+        const tWeek = document.querySelector('#tab-week tbody');
+        const tWEnd = document.querySelector('#tab-weekend tbody');
+        tWeek.innerHTML = ''; tWEnd.innerHTML = '';
 
-        dates.forEach(date => {
-            const d = db[date];
-            const dayOfWeek = new Date(date + "T00:00:00").getDay(); // 0=Dom, 6=Sab
-            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const sortedDates = Object.keys(db).sort().reverse();
+        const filtered = sortedDates.filter(d => d.includes(q));
+
+        filtered.forEach(date => {
+            const item = db[date];
+            const dayIdx = new Date(date + "T00:00:00").getDay();
+            const isWE = (dayIdx === 0 || dayIdx === 6);
             
-            const row = `<tr><td>${date}</td><td>${d.n}/${d.b}/${d.z}</td><td style="font-weight:bold">${d.total}</td></tr>`;
+            const row = `<tr>
+                <td><b>${date}</b></td>
+                <td style="color:#aaa">${item.n}/${item.b}/${item.z}</td>
+                <td style="font-size:1.2rem; font-weight:bold">${item.total}</td>
+                <td><button class="btn-delete" onclick="deleteRecord('${date}')">🗑️</button></td>
+            </tr>`;
             
-            if(isWeekend) weekendBody.innerHTML += row;
-            else weekBody.innerHTML += row;
-
-            chartData.labels.push(date);
-            chartData.totals.push(d.total);
+            if(isWE) tWEnd.innerHTML += row; else tWeek.innerHTML += row;
         });
 
-        // Actualizar Gráfica
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        if(chart) chart.destroy();
-        chart = new Chart(ctx, {
+        updateChart(sortedDates.slice(0,7).reverse());
+    }
+
+    function updateChart(labels) {
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const data = labels.map(l => db[l].total);
+        if(myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: chartData.labels.slice(0,10).reverse(),
-                datasets: [{ label: 'Total', data: chartData.totals.slice(0,10).reverse(), backgroundColor: '#fff' }]
+                labels,
+                datasets: [{ label: 'Asistencia Total', data, backgroundColor: '#ffffff', borderRadius: 8 }]
             },
-            options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#222' } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, 
+            scales: { y: { ticks: { color: '#666' }, grid: { color: '#222' } }, x: { ticks: { color: '#fff' } } } }
         });
     }
 
-    // Inicio
-    selectDate(selectedDate);
-    renderAll();
+    // Calculadora Simple
+    let cExp = "";
+    function cPress(v) { cExp += v; document.getElementById('calc-res').innerText = cExp; }
+    function cClear() { cExp = ""; document.getElementById('calc-res').innerText = "0"; }
+    function cEval() { try { cExp = eval(cExp).toString(); document.getElementById('calc-res').innerText = cExp; } catch { cClear(); } }
+
+    // Init
+    pickDate(selDate);
+    renderHistory();
 </script>
 </body>
 </html>
