@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stats Master Pro - Ultimate Edition</title>
+    <title>Stats Master Cloud Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg: #000000;
@@ -21,11 +24,11 @@
             --success: #28a745;
         }
 
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 650px; }
         
-        h2 { font-size: 1.8rem; letter-spacing: 1px; margin-bottom: 20px; text-align: center; font-weight: 300; }
-        h3 { font-size: 1.2rem; margin: 25px 0 10px; padding-left: 10px; }
+        h2 { font-size: 1.8rem; letter-spacing: 1px; margin-bottom: 20px; text-align: center; }
+        h3 { font-size: 1.2rem; margin: 25px 0 10px; padding-left: 10px; border-left: 4px solid var(--accent); }
         
         .card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
@@ -33,23 +36,16 @@
             width: 100%; padding: 18px; border-radius: 12px; border: none; 
             font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; 
             display: flex; justify-content: center; align-items: center; gap: 10px;
-            box-sizing: border-box;
         }
         .btn-date { background: #222; color: white; border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-save { background: var(--accent); color: black; margin-top: 10px; }
-        .btn-pdf { background: var(--success); color: white; width: 60%; }
+        .btn-pdf { background: var(--success); color: white; flex-grow: 1; }
         
-        .export-group { display: flex; gap: 10px; margin-top: 15px; align-items: stretch; }
-        .select-pdf { 
-            width: 40%; background: #222; color: white; border: 1px solid var(--border); 
-            border-radius: 12px; padding: 0 10px; font-size: 0.9rem; outline: none;
-        }
-
         .grid-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .stat-field label { display: block; font-size: 0.9rem; color: #aaa; margin-bottom: 8px; text-align: center; }
+        .stat-field label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-align: center; }
         .stat-field input { 
             width: 100%; padding: 15px; background: #222; border: 1px solid var(--border); 
-            border-radius: 10px; color: white; font-size: 1.3rem; text-align: center; 
+            border-radius: 10px; color: white; font-size: 1.3rem; text-align: center; box-sizing: border-box;
         }
 
         .total-display { font-size: 3.5rem; font-weight: bold; text-align: center; margin: 15px 0; color: var(--accent); }
@@ -57,19 +53,19 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1a1a1a; border-radius: 12px; overflow: hidden; }
         th { background: #252525; padding: 15px; text-align: left; font-size: 0.9rem; color: #888; }
         td { padding: 15px; border-bottom: 1px solid #222; font-size: 1rem; }
-        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 5px 10px; }
+        .btn-del-table { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; }
 
+        /* Modales */
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #181818; border: 1px solid #444; border-radius: 20px; padding: 25px; z-index: 1001; width: 90%; max-width: 400px; }
         .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; }
         
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; margin-top: 15px; }
-        .day-n { color: #666; font-size: 0.8rem; font-weight: bold; }
-        .day-v { padding: 12px 0; cursor: pointer; border-radius: 8px; font-size: 1rem; }
+        .day-v { padding: 12px 0; cursor: pointer; border-radius: 8px; }
         .day-v:hover { background: #333; }
         .day-v.active { background: white; color: black; font-weight: bold; }
 
-        .tag-week { color: var(--info); border-left: 4px solid var(--info); }
-        .tag-weekend { color: var(--warning); border-left: 4px solid var(--warning); }
+        .calc-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .btn-c { padding: 20px; background: #333; border: none; color: white; border-radius: 10px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -77,7 +73,7 @@
 <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
 <div class="container">
-    <h2>CONTROL DE REGISTRO</h2>
+    <h2>REGISTRO EN LA NUBE</h2>
 
     <div class="card">
         <button class="btn-main btn-date" onclick="openModal('modal-cal')">
@@ -85,32 +81,21 @@
         </button>
 
         <div class="grid-stats">
-            <div class="stat-field">
-                <label>NATIVOS</label>
-                <input type="number" id="in-n" value="0" oninput="recalc()">
-            </div>
-            <div class="stat-field">
-                <label>BRASILEROS</label>
-                <input type="number" id="in-b" value="0" oninput="recalc()">
-            </div>
-            <div class="stat-field">
-                <label>ZOOM</label>
-                <input type="number" id="in-z" value="0" oninput="recalc()">
-            </div>
+            <div class="stat-field"><label>NATIVOS</label><input type="number" id="in-n" value="0" oninput="recalc()"></div>
+            <div class="stat-field"><label>BRASILEROS</label><input type="number" id="in-b" value="0" oninput="recalc()"></div>
+            <div class="stat-field"><label>ZOOM</label><input type="number" id="in-z" value="0" oninput="recalc()"></div>
         </div>
 
         <div class="total-display" id="total-view">0</div>
         
-        <button class="btn-main btn-save" onclick="saveRecord()">💾 GUARDAR EN REGISTRO</button>
+        <button class="btn-main btn-save" onclick="saveRecord()">💾 SINCRONIZAR AHORA</button>
         
-        <div class="export-group">
-            <select id="pdfFilter" class="select-pdf">
-                <option value="all">Todo el historial</option>
-                <option value="1">Último mes</option>
-                <option value="2">Últimos 2 meses</option>
-                <option value="3">Últimos 3 meses</option>
-                <option value="6">Últimos 6 meses</option>
-                <option value="12">Último año</option>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <select id="pdfFilter" style="background:#222; color:white; border-radius:12px; border:1px solid #444; padding:10px; width:40%;">
+                <option value="all">Todo</option>
+                <option value="1">1 Mes</option>
+                <option value="3">3 Meses</option>
+                <option value="12">1 Año</option>
             </select>
             <button class="btn-main btn-pdf" onclick="exportToPDF()">📄 PDF</button>
         </div>
@@ -119,7 +104,7 @@
     </div>
 
     <div class="card">
-        <input type="text" id="dateSearch" style="width:100%; padding:15px; background:#222; border:1px solid #444; color:white; border-radius:10px; box-sizing:border-box;" placeholder="🔍 Buscar fecha en historial..." oninput="renderHistory()">
+        <input type="text" id="dateSearch" style="width:100%; padding:15px; background:#222; border:1px solid #444; color:white; border-radius:10px; box-sizing:border-box;" placeholder="🔍 Buscar por fecha..." oninput="renderHistory()">
     </div>
 
     <div class="card" style="height: 250px;">
@@ -127,14 +112,8 @@
     </div>
 
     <div class="card">
-        <h3 class="tag-week">ENTRE SEMANA</h3>
-        <table id="tab-week">
-            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th><th></th></tr></thead>
-            <tbody></tbody>
-        </table>
-
-        <h3 class="tag-weekend">FIN DE SEMANA</h3>
-        <table id="tab-weekend">
+        <h3>HISTORIAL DE REGISTROS</h3>
+        <table id="main-table">
             <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th><th></th></tr></thead>
             <tbody></tbody>
         </table>
@@ -143,9 +122,9 @@
 
 <div id="modal-cal" class="modal">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <button onclick="moveMonth(-1)" style="background:none; border:none; color:white; cursor:pointer;">◀</button>
-        <span id="cal-title" style="font-weight:bold; font-size:1.2rem;"></span>
-        <button onclick="moveMonth(1)" style="background:none; border:none; color:white; cursor:pointer;">▶</button>
+        <button onclick="moveMonth(-1)" style="color:white; background:none; border:none; cursor:pointer;">◀</button>
+        <span id="cal-title" style="font-weight:bold;"></span>
+        <button onclick="moveMonth(1)" style="color:white; background:none; border:none; cursor:pointer;">▶</button>
     </div>
     <div class="cal-grid" id="cal-body"></div>
     <button class="btn-main btn-save" style="margin-top:20px" onclick="closeModals()">CERRAR</button>
@@ -153,95 +132,80 @@
 
 <div id="modal-calc" class="modal">
     <div id="calc-res" style="background:#000; padding:20px; text-align:right; font-size:2rem; border-radius:10px; margin-bottom:15px; border:1px solid #333;">0</div>
-    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;">
-        <button onclick="cClear()" style="padding:15px; background:#444; color:white; border:none; border-radius:10px;">C</button>
-        <button onclick="cPress('/')" style="padding:15px; background:#444; color:white; border:none; border-radius:10px;">/</button>
-        <button onclick="cPress('*')" style="padding:15px; background:#444; color:white; border:none; border-radius:10px;">×</button>
-        <button onclick="cPress('-')" style="padding:15px; background:#444; color:white; border:none; border-radius:10px;">-</button>
-        <button onclick="cPress('7')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">7</button>
-        <button onclick="cPress('8')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">8</button>
-        <button onclick="cPress('9')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">9</button>
-        <button onclick="cPress('+')" style="padding:15px; background:var(--info); color:white; border:none; border-radius:10px;">+</button>
-        <button onclick="cPress('4')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">4</button>
-        <button onclick="cPress('5')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">5</button>
-        <button onclick="cPress('6')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">6</button>
-        <button onclick="cEval()" style="padding:15px; background:white; color:black; border:none; border-radius:10px; grid-row: span 2;">=</button>
-        <button onclick="cPress('1')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">1</button>
-        <button onclick="cPress('2')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">2</button>
-        <button onclick="cPress('3')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px;">3</button>
-        <button onclick="cPress('0')" style="padding:15px; background:#222; color:white; border:none; border-radius:10px; grid-column: span 3;">0</button>
+    <div class="calc-btns">
+        <button class="btn-c" onclick="cClear()">C</button>
+        <button class="btn-c" onclick="cPress('/')">/</button>
+        <button class="btn-c" onclick="cPress('*')">×</button>
+        <button class="btn-c" onclick="cPress('-')">-</button>
+        <button class="btn-c" onclick="cPress('7')">7</button>
+        <button class="btn-c" onclick="cPress('8')">8</button>
+        <button class="btn-c" onclick="cPress('9')">9</button>
+        <button class="btn-c" style="background:var(--info)" onclick="cPress('+')">+</button>
+        <button class="btn-c" onclick="cPress('4')">4</button>
+        <button class="btn-c" onclick="cPress('5')">5</button>
+        <button class="btn-c" onclick="cPress('6')">6</button>
+        <button class="btn-c" style="background:white; color:black" onclick="cEval()">=</button>
     </div>
-    <button class="btn-main" style="margin-top:20px; background:#333; color:white;" onclick="closeModals()">CERRAR</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('stats_v6')) || {};
+    // CREDENCIALES INTEGRADAS DESDE TU IMAGEN
+    const firebaseConfig = {
+        apiKey: "AIzaSyBW2_C14i_5lw1yeuA0VXhE9brIrpedpEM",
+        authDomain: "stats-23446.firebaseapp.com",
+        projectId: "stats-23446",
+        storageBucket: "stats-23446.firebasestorage.app",
+        messagingSenderId: "794246839864",
+        appId: "1:794246839864:web:7e5102ae64e647a9b8b0cd",
+        measurementId: "G-HZCMTK40EG"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let db = {};
     let selDate = new Date().toISOString().split('T')[0];
     let viewDate = new Date();
     let myChart;
 
-    function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; if(id==='modal-cal') renderCal(); }
-    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(m => m.style.display='none'); }
-
-    function renderCal() {
-        const body = document.getElementById('cal-body');
-        const title = document.getElementById('cal-title');
-        body.innerHTML = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'].map(d => `<div class="day-n">${d}</div>`).join('');
-        title.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
-        const y = viewDate.getFullYear(), m = viewDate.getMonth();
-        const start = new Date(y, m, 1).getDay();
-        const days = new Date(y, m+1, 0).getDate();
-        for(let i=0; i<start; i++) body.innerHTML += '<div></div>';
-        for(let d=1; d<=days; d++) {
-            const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            body.innerHTML += `<div class="day-v ${ds===selDate?'active':''}" onclick="pickDate('${ds}')">${d}</div>`;
-        }
-    }
-
-    function pickDate(d) {
-        selDate = d; document.getElementById('label-fecha').innerText = d;
-        const entry = db[d] || {n:0, b:0, z:0};
-        document.getElementById('in-n').value = entry.n;
-        document.getElementById('in-b').value = entry.b;
-        document.getElementById('in-z').value = entry.z;
-        recalc(); closeModals();
-    }
-
-    function moveMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCal(); }
-    function recalc() {
-        const t = (+document.getElementById('in-n').value) + (+document.getElementById('in-b').value) + (+document.getElementById('in-z').value);
-        document.getElementById('total-view').innerText = t;
-    }
+    // Escuchar la nube en tiempo real
+    database.ref('registros/').on('value', (snapshot) => {
+        db = snapshot.val() || {};
+        renderHistory();
+    });
 
     function saveRecord() {
-        db[selDate] = {
+        const data = {
             n: +document.getElementById('in-n').value,
             b: +document.getElementById('in-b').value,
             z: +document.getElementById('in-z').value,
             total: +document.getElementById('total-view').innerText
         };
-        localStorage.setItem('stats_v6', JSON.stringify(db));
-        renderHistory();
-        alert("¡Registro guardado!");
+        database.ref('registros/' + selDate).set(data)
+            .then(() => alert("✅ Guardado en la nube y sincronizado"))
+            .catch(() => alert("❌ Error: Revisa tus reglas de Firebase"));
     }
 
     function deleteRecord(d) {
-        if(confirm(`¿Deseas eliminar el registro del ${d}?`)) { delete db[d]; localStorage.setItem('stats_v6', JSON.stringify(db)); renderHistory(); }
+        if(confirm(`¿Eliminar ${d}?`)) database.ref('registros/' + d).remove();
+    }
+
+    function recalc() {
+        const t = (+document.getElementById('in-n').value) + (+document.getElementById('in-b').value) + (+document.getElementById('in-z').value);
+        document.getElementById('total-view').innerText = t;
     }
 
     function renderHistory() {
-        const q = document.getElementById('dateSearch').value.toLowerCase();
-        const tWeek = document.querySelector('#tab-week tbody');
-        const tWEnd = document.querySelector('#tab-weekend tbody');
-        tWeek.innerHTML = ''; tWEnd.innerHTML = '';
+        const q = document.getElementById('dateSearch').value;
+        const tbody = document.querySelector('#main-table tbody');
+        tbody.innerHTML = '';
         const sortedDates = Object.keys(db).sort().reverse();
+        
         sortedDates.filter(d => d.includes(q)).forEach(date => {
             const item = db[date];
-            const isWE = [0, 6].includes(new Date(date + "T00:00:00").getDay());
-            const row = `<tr><td><b>${date}</b></td><td>${item.n}/${item.b}/${item.z}</td><td><b>${item.total}</b></td><td><button class="btn-delete" onclick="deleteRecord('${date}')">🗑️</button></td></tr>`;
-            if(isWE) tWEnd.innerHTML += row; else tWeek.innerHTML += row;
+            tbody.innerHTML += `<tr><td><b>${date}</b></td><td>${item.n}/${item.b}/${item.z}</td><td><b>${item.total}</b></td><td><button class="btn-del-table" onclick="deleteRecord('${date}')">🗑️</button></td></tr>`;
         });
-        updateChart(sortedDates.slice(0,10).reverse());
+        updateChart(sortedDates.slice(0,7).reverse());
     }
 
     function updateChart(labels) {
@@ -249,58 +213,56 @@
         if(myChart) myChart.destroy();
         myChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels, datasets: [{ label: 'Total', data: labels.map(l => db[l].total), backgroundColor: '#fff', borderRadius: 8 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#222' } } } }
+            data: { labels, datasets: [{ label: 'Total', data: labels.map(l => db[l].total), backgroundColor: '#fff' }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#222' } } } }
         });
     }
 
+    // Funciones de Calendario
+    function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; if(id==='modal-cal') renderCal(); }
+    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(m => m.style.display='none'); }
+
+    function renderCal() {
+        const body = document.getElementById('cal-body');
+        const title = document.getElementById('cal-title');
+        body.innerHTML = '';
+        title.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
+        const y = viewDate.getFullYear(), m = viewDate.getMonth();
+        const days = new Date(y, m+1, 0).getDate();
+        for(let d=1; d<=days; d++) {
+            const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            body.innerHTML += `<div class="day-v ${ds===selDate?'active':''}" onclick="pickDate('${ds}')">${d}</div>`;
+        }
+    }
+    function pickDate(d) { selDate = d; document.getElementById('label-fecha').innerText = d; closeModals(); }
+    function moveMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCal(); }
+
+    // Exportar PDF
     function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const filterVal = document.getElementById('pdfFilter').value;
-        
         let sortedDates = Object.keys(db).sort().reverse();
-        
+
         if (filterVal !== 'all') {
-            const monthsToSubtract = parseInt(filterVal);
-            const cutoffDate = new Date();
-            cutoffDate.setMonth(cutoffDate.getMonth() - monthsToSubtract);
-            sortedDates = sortedDates.filter(d => new Date(d + "T00:00:00") >= cutoffDate);
+            const cutoff = new Date();
+            cutoff.setMonth(cutoff.getMonth() - parseInt(filterVal));
+            sortedDates = sortedDates.filter(d => new Date(d) >= cutoff);
         }
 
-        if (sortedDates.length === 0) return alert("No hay registros en el rango seleccionado.");
-
-        doc.setFontSize(18);
-        doc.text("REPORTE DE ASISTENCIA", 14, 20);
-        doc.setFontSize(10);
-        const filterLabels = { "all": "Todo el historial", "1": "Último mes", "2": "Últimos 2 meses", "3": "Últimos 3 meses", "6": "Últimos 6 meses", "12": "Último año" };
-        doc.text(`Filtro: ${filterLabels[filterVal]} | Generado: ${new Date().toLocaleDateString()}`, 14, 28);
-
-        const rows = sortedDates.map(date => {
-            const item = db[date];
-            const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(new Date(date + "T00:00:00"));
-            return [date, dayName.toUpperCase(), item.n, item.b, item.z, item.total];
-        });
-
-        doc.autoTable({
-            startY: 35,
-            head: [['FECHA', 'DÍA', 'NATIVOS', 'BRASILEROS', 'ZOOM', 'TOTAL']],
-            body: rows,
-            theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
-            alternateRowStyles: { fillColor: [240, 240, 240] }
-        });
-
-        doc.save(`Reporte_Asistencia_${filterVal}_meses.pdf`);
+        doc.text("REPORTE DE ASISTENCIA - NUBE", 14, 20);
+        const rows = sortedDates.map(d => [d, db[d].n, db[d].b, db[d].z, db[d].total]);
+        doc.autoTable({ head: [['Fecha', 'Nat.', 'Bras.', 'Zoom', 'Total']], body: rows, startY: 30 });
+        doc.save(`Reporte_${filterVal}_meses.pdf`);
     }
 
+    // Calculadora
     let cExp = "";
     function cPress(v) { cExp += v; document.getElementById('calc-res').innerText = cExp; }
     function cClear() { cExp = ""; document.getElementById('calc-res').innerText = "0"; }
     function cEval() { try { cExp = eval(cExp).toString(); document.getElementById('calc-res').innerText = cExp; } catch { cClear(); } }
 
-    pickDate(selDate);
-    renderHistory();
+    document.getElementById('label-fecha').innerText = selDate;
 </script>
 </body>
 </html>
