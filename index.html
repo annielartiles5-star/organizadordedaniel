@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stats Master Pro - Export Edition</title>
+    <title>Stats Master Pro - Ultimate Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -29,7 +29,6 @@
         
         .card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        /* Estilos de botones e inputs */
         .btn-main { 
             width: 100%; padding: 18px; border-radius: 12px; border: none; 
             font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; 
@@ -55,13 +54,11 @@
 
         .total-display { font-size: 3.5rem; font-weight: bold; text-align: center; margin: 15px 0; color: var(--accent); }
 
-        /* Tablas */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1a1a1a; border-radius: 12px; overflow: hidden; }
         th { background: #252525; padding: 15px; text-align: left; font-size: 0.9rem; color: #888; }
         td { padding: 15px; border-bottom: 1px solid #222; font-size: 1rem; }
         .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 5px 10px; }
 
-        /* Modales */
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #181818; border: 1px solid #444; border-radius: 20px; padding: 25px; z-index: 1001; width: 90%; max-width: 400px; }
         .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; }
         
@@ -112,6 +109,8 @@
                 <option value="1">Último mes</option>
                 <option value="2">Últimos 2 meses</option>
                 <option value="3">Últimos 3 meses</option>
+                <option value="6">Últimos 6 meses</option>
+                <option value="12">Último año</option>
             </select>
             <button class="btn-main btn-pdf" onclick="exportToPDF()">📄 PDF</button>
         </div>
@@ -255,7 +254,6 @@
         });
     }
 
-    // EXPORTACIÓN CON FILTRO
     function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -275,8 +273,8 @@
         doc.setFontSize(18);
         doc.text("REPORTE DE ASISTENCIA", 14, 20);
         doc.setFontSize(10);
-        const filterText = filterVal === 'all' ? 'Todo el historial' : `Últimos ${filterVal} meses`;
-        doc.text(`Filtro aplicado: ${filterText} | Generado: ${new Date().toLocaleDateString()}`, 14, 28);
+        const filterLabels = { "all": "Todo el historial", "1": "Último mes", "2": "Últimos 2 meses", "3": "Últimos 3 meses", "6": "Últimos 6 meses", "12": "Último año" };
+        doc.text(`Filtro: ${filterLabels[filterVal]} | Generado: ${new Date().toLocaleDateString()}`, 14, 28);
 
         const rows = sortedDates.map(date => {
             const item = db[date];
@@ -293,10 +291,9 @@
             alternateRowStyles: { fillColor: [240, 240, 240] }
         });
 
-        doc.save(`Reporte_Stats_${filterVal}meses.pdf`);
+        doc.save(`Reporte_Asistencia_${filterVal}_meses.pdf`);
     }
 
-    // Calculadora
     let cExp = "";
     function cPress(v) { cExp += v; document.getElementById('calc-res').innerText = cExp; }
     function cClear() { cExp = ""; document.getElementById('calc-res').innerText = "0"; }
