@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stats Master Cloud - Sincronizado</title>
+    <title>Stats Master Cloud Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
@@ -12,24 +14,27 @@
     <style>
         :root {
             --bg: #000; --card: #151515; --accent: #fff; --text: #fff;
-            --border: #333; --info: #00d1ff; --warning: #ffcc00;
+            --border: #333; --danger: #ff4444; --info: #00d1ff;
+            --warning: #ffcc00; --success: #28a745;
         }
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 600px; }
+        .container { width: 100%; max-width: 650px; }
         
         .card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
         .btn-main { 
             width: 100%; padding: 18px; border-radius: 12px; border: none; 
-            font-weight: bold; font-size: 1.1rem; cursor: pointer; 
+            font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; 
             display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px;
         }
         .btn-date { background: #222; color: white; border: 1px solid var(--border); }
         .btn-save { background: var(--accent); color: black; }
+        .btn-pdf { background: var(--success); color: white; width: 60%; }
         
         .grid-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .grid-stats input { 
+        .stat-field label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-align: center; }
+        .stat-field input { 
             width: 100%; padding: 15px; background: #222; border: 1px solid var(--border); 
             border-radius: 10px; color: white; font-size: 1.3rem; text-align: center; box-sizing: border-box;
         }
@@ -40,49 +45,104 @@
         th { background: #252525; padding: 12px; text-align: left; font-size: 0.8rem; color: #888; }
         td { padding: 12px; border-bottom: 1px solid #222; font-size: 0.9rem; }
         
-        .tag-week { color: var(--info); border-left: 4px solid var(--info); padding-left: 10px; margin-top: 25px; font-size: 1rem; }
-        .tag-weekend { color: var(--warning); border-left: 4px solid var(--warning); padding-left: 10px; margin-top: 25px; font-size: 1rem; }
+        .tag-week { color: var(--info); border-left: 4px solid var(--info); padding-left: 10px; margin-top: 20px; }
+        .tag-weekend { color: var(--warning); border-left: 4px solid var(--warning); padding-left: 10px; margin-top: 20px; }
 
-        /* Estilo para el buscador */
-        #dateSearch { width: 100%; padding: 15px; background: #222; border: 1px solid var(--border); color: white; border-radius: 10px; box-sizing: border-box; margin-bottom: 10px; }
+        /* Modales */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #181818; border: 1px solid #444; border-radius: 20px; padding: 25px; z-index: 1001; width: 90%; max-width: 400px; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; }
+        
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; margin-top: 15px; }
+        .day-v { padding: 10px 0; cursor: pointer; border-radius: 5px; font-size: 0.9rem; }
+        .day-v.active { background: white; color: black; font-weight: bold; }
+
+        .calc-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .btn-c { padding: 15px; background: #333; border: none; color: white; border-radius: 10px; font-size: 1.2rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
+<div class="overlay" id="overlay" onclick="closeModals()"></div>
+
 <div class="container">
-    <h2 style="text-align: center; letter-spacing: 1px;">CONTROL DE REGISTRO</h2>
+    <h2 style="text-align: center;">CONTROL DE REGISTRO</h2>
 
     <div class="card">
-        <div class="btn-main btn-date">
-            📅 <span id="label-fecha">Cargando...</span>
-        </div>
+        <button class="btn-main btn-date" onclick="openModal('modal-cal')">
+            📅 <span id="label-fecha">Seleccionar Fecha</span>
+        </button>
 
         <div class="grid-stats">
-            <input type="number" id="in-n" value="0" oninput="recalc()">
-            <input type="number" id="in-b" value="0" oninput="recalc()">
-            <input type="number" id="in-z" value="0" oninput="recalc()">
+            <div class="stat-field"><label>NAT.</label><input type="number" id="in-n" value="0" oninput="recalc()"></div>
+            <div class="stat-field"><label>BRA.</label><input type="number" id="in-b" value="0" oninput="recalc()"></div>
+            <div class="stat-field"><label>ZOOM</label><input type="number" id="in-z" value="0" oninput="recalc()"></div>
         </div>
 
         <div class="total-display" id="total-view">0</div>
         
         <button class="btn-main btn-save" onclick="saveRecord()">💾 GUARDAR DATOS</button>
+        
+        <div style="display:flex; gap:10px;">
+            <select id="pdfFilter" style="background:#222; color:white; border-radius:12px; border:1px solid #444; padding:10px; width:40%;">
+                <option value="all">Todo</option>
+                <option value="1">1 Mes</option>
+                <option value="3">3 Meses</option>
+                <option value="12">1 Año</option>
+            </select>
+            <button class="btn-main btn-pdf" onclick="exportToPDF()">📄 PDF</button>
+        </div>
+
+        <button class="btn-main" style="margin-top:10px; background:#222; color:#fff; border:1px solid #444" onclick="openModal('modal-calc')">🧮 CALCULADORA</button>
     </div>
 
     <div class="card">
-        <input type="text" id="dateSearch" placeholder="🔍 Buscar por fecha (AAAA-MM-DD)..." oninput="renderHistory()">
+        <input type="text" id="dateSearch" style="width:100%; padding:15px; background:#222; border:1px solid #444; color:white; border-radius:10px; box-sizing:border-box; margin-bottom:10px;" placeholder="🔍 Buscar fecha..." oninput="renderHistory()">
         
         <h3 class="tag-week">ENTRE SEMANA</h3>
         <table id="tab-week">
-            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th><th></th></tr></thead>
             <tbody></tbody>
         </table>
 
         <h3 class="tag-weekend">FIN DE SEMANA</h3>
         <table id="tab-weekend">
-            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th><th></th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
+</div>
+
+<div id="modal-cal" class="modal">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button onclick="moveMonth(-1)" style="color:white; background:none; border:none; cursor:pointer;">◀</button>
+        <span id="cal-title" style="font-weight:bold;"></span>
+        <button onclick="moveMonth(1)" style="color:white; background:none; border:none; cursor:pointer;">▶</button>
+    </div>
+    <div class="cal-grid" id="cal-body"></div>
+    <button class="btn-main btn-save" style="margin-top:20px" onclick="closeModals()">CERRAR</button>
+</div>
+
+<div id="modal-calc" class="modal">
+    <div id="calc-res" style="background:#000; padding:20px; text-align:right; font-size:1.8rem; border-radius:10px; margin-bottom:15px; border:1px solid #333; min-height:40px;">0</div>
+    <div class="calc-btns">
+        <button class="btn-c" onclick="cClear()">C</button>
+        <button class="btn-c" onclick="cPress('/')">/</button>
+        <button class="btn-c" onclick="cPress('*')">×</button>
+        <button class="btn-c" onclick="cPress('-')">-</button>
+        <button class="btn-c" onclick="cPress('7')">7</button>
+        <button class="btn-c" onclick="cPress('8')">8</button>
+        <button class="btn-c" onclick="cPress('9')">9</button>
+        <button class="btn-c" style="background:var(--info)" onclick="cPress('+')">+</button>
+        <button class="btn-c" onclick="cPress('4')">4</button>
+        <button class="btn-c" onclick="cPress('5')">5</button>
+        <button class="btn-c" onclick="cPress('6')">6</button>
+        <button class="btn-c" style="background:white; color:black" onclick="cEval()">=</button>
+        <button class="btn-c" onclick="cPress('1')">1</button>
+        <button class="btn-c" onclick="cPress('2')">2</button>
+        <button class="btn-c" onclick="cPress('3')">3</button>
+        <button class="btn-c" onclick="cPress('0')">0</button>
+    </div>
+    <button class="btn-main btn-save" style="margin-top:20px" onclick="closeModals()">CERRAR</button>
 </div>
 
 <script>
@@ -95,67 +155,99 @@
         appId: "1:794246839864:web:7e5102ae64e647a9b8b0cd"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     let db = {};
     let selDate = new Date().toISOString().split('T')[0];
-    document.getElementById('label-fecha').innerText = selDate;
+    let viewDate = new Date();
 
-    // Escuchar la nube en tiempo real
+    // Sincronización en tiempo real
     database.ref('registros/').on('value', (snapshot) => {
         db = snapshot.val() || {};
         renderHistory();
     });
 
     function recalc() {
-        const n = parseInt(document.getElementById('in-n').value) || 0;
-        const b = parseInt(document.getElementById('in-b').value) || 0;
-        const z = parseInt(document.getElementById('in-z').value) || 0;
-        document.getElementById('total-view').innerText = n + b + z;
+        const t = (+document.getElementById('in-n').value) + (+document.getElementById('in-b').value) + (+document.getElementById('in-z').value);
+        document.getElementById('total-view').innerText = t;
     }
 
     function saveRecord() {
-        const n = parseInt(document.getElementById('in-n').value) || 0;
-        const b = parseInt(document.getElementById('in-b').value) || 0;
-        const z = parseInt(document.getElementById('in-z').value) || 0;
-        const total = n + b + z;
-
-        const data = { n, b, z, total };
-
-        // Guardar y sincronizar en la nube
+        const data = {
+            n: +document.getElementById('in-n').value,
+            b: +document.getElementById('in-b').value,
+            z: +document.getElementById('in-z').value,
+            total: +document.getElementById('total-view').innerText
+        };
         database.ref('registros/' + selDate).set(data)
-            .then(() => alert("✅ Datos guardados y sincronizados en todos los dispositivos"))
-            .catch(() => alert("❌ Error: Revisa las reglas de tu base de datos en Firebase"));
+            .then(() => alert("✅ Datos sincronizados correctamente"))
+            .catch(() => alert("❌ Error: Revisa las REGLAS en Firebase"));
+    }
+
+    function deleteRecord(d) {
+        if(confirm(`¿Eliminar registro del ${d}?`)) database.ref('registros/' + d).remove();
     }
 
     function renderHistory() {
         const q = document.getElementById('dateSearch').value;
         const tWeek = document.querySelector('#tab-week tbody');
         const tWEnd = document.querySelector('#tab-weekend tbody');
+        tWeek.innerHTML = ''; tWEnd.innerHTML = '';
         
-        tWeek.innerHTML = ''; 
-        tWEnd.innerHTML = '';
-        
-        const sortedDates = Object.keys(db).sort().reverse();
-        
-        sortedDates.filter(d => d.includes(q)).forEach(date => {
+        Object.keys(db).sort().reverse().filter(d => d.includes(q)).forEach(date => {
             const item = db[date];
-            // Identificar si es fin de semana (Sábado=6, Domingo=0)
-            const dayNum = new Date(date + "T00:00:00").getDay();
-            const isWeekend = (dayNum === 0 || dayNum === 6);
-            
-            const row = `<tr>
-                <td><b>${date}</b></td>
-                <td>${item.n}/${item.b}/${item.z}</td>
-                <td style="color:var(--accent)"><b>${item.total}</b></td>
-            </tr>`;
-            
-            if(isWeekend) tWEnd.innerHTML += row; 
-            else tWeek.innerHTML += row;
+            const isWE = [0, 6].includes(new Date(date + "T00:00:00").getDay());
+            const row = `<tr><td><b>${date}</b></td><td>${item.n}/${item.b}/${item.z}</td><td><b>${item.total}</b></td><td><button style="background:none; border:none; color:red; cursor:pointer;" onclick="deleteRecord('${date}')">🗑️</button></td></tr>`;
+            if(isWE) tWEnd.innerHTML += row; else tWeek.innerHTML += row;
         });
     }
+
+    // Funciones Calendario
+    function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; if(id==='modal-cal') renderCal(); }
+    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(m => m.style.display='none'); }
+
+    function renderCal() {
+        const body = document.getElementById('cal-body');
+        const title = document.getElementById('cal-title');
+        body.innerHTML = '';
+        title.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
+        const y = viewDate.getFullYear(), m = viewDate.getMonth();
+        const days = new Date(y, m+1, 0).getDate();
+        for(let d=1; d<=days; d++) {
+            const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            body.innerHTML += `<div class="day-v ${ds===selDate?'active':''}" onclick="pickDate('${ds}')">${d}</div>`;
+        }
+    }
+    function pickDate(d) { selDate = d; document.getElementById('label-fecha').innerText = d; closeModals(); }
+    function moveMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCal(); }
+
+    // Exportar PDF con Rangos
+    function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const filterVal = document.getElementById('pdfFilter').value;
+        let sortedDates = Object.keys(db).sort().reverse();
+
+        if (filterVal !== 'all') {
+            const cutoff = new Date();
+            cutoff.setMonth(cutoff.getMonth() - parseInt(filterVal));
+            sortedDates = sortedDates.filter(d => new Date(d) >= cutoff);
+        }
+
+        doc.text("REPORTE DE ASISTENCIA ORGANIZADO", 14, 20);
+        const rows = sortedDates.map(d => [d, db[d].n, db[d].b, db[d].z, db[d].total]);
+        doc.autoTable({ head: [['Fecha', 'Nat.', 'Bras.', 'Zoom', 'Total']], body: rows, startY: 30 });
+        doc.save(`Reporte_${filterVal}_meses.pdf`);
+    }
+
+    // Calculadora Simple
+    let cExp = "";
+    function cPress(v) { cExp += v; document.getElementById('calc-res').innerText = cExp; }
+    function cClear() { cExp = ""; document.getElementById('calc-res').innerText = "0"; }
+    function cEval() { try { cExp = eval(cExp).toString(); document.getElementById('calc-res').innerText = cExp; } catch { cClear(); } }
+
+    document.getElementById('label-fecha').innerText = selDate;
 </script>
 </body>
 </html>
