@@ -3,317 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stats Pro - Black Edition</title>
+    <title>Stats Master Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #000000;
-            --card: #121212;
+            --bg: #050505;
+            --card: #111;
             --accent: #ffffff;
-            --text: #ffffff;
-            --muted: #888888;
-            --input: #1e1e1e;
-            --border: #2a2a2a;
+            --text: #eee;
+            --border: #222;
+            --week: #1a1a1a;
+            --weekend: #251a00;
         }
 
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 600px; }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 15px; }
 
-        /* Estilos del Calendario Modal */
-        #calendar-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            z-index: 1000;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-        }
+        /* Calendario Estilo Foto */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 1px solid #333; border-radius: 20px; padding: 20px; z-index: 1001; width: 90%; max-width: 350px; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 1000; }
+        
+        .cal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 0.8rem; }
+        .day-name { color: #555; font-weight: bold; padding-bottom: 5px; }
+        .day-cell { padding: 10px 0; cursor: pointer; border-radius: 5px; }
+        .day-cell:hover { background: #222; }
+        .day-cell.active { background: var(--accent); color: #000; font-weight: bold; }
 
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
+        /* Calculadora */
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .calc-screen { grid-column: span 4; background: #000; color: #fff; padding: 15px; text-align: right; font-size: 1.5rem; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px; }
+        .btn-calc { padding: 15px; background: #222; border: none; color: #fff; border-radius: 8px; cursor: pointer; }
+        .btn-calc.op { background: #333; }
 
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            text-align: center;
-        }
+        /* Inputs y Tabla */
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 15px 0; }
+        input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; color: #fff; box-sizing: border-box; }
+        label { font-size: 0.7rem; color: #777; text-transform: uppercase; }
+        
+        .section-title { font-size: 0.9rem; color: #ffcc00; margin: 20px 0 10px; border-left: 3px solid #ffcc00; padding-left: 10px; }
+        .week-title { color: #00ccff; border-left-color: #00ccff; }
 
-        .cal-day {
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: 0.2s;
-        }
-
-        .cal-day:hover { background: var(--input); }
-        .cal-day.active { background: var(--accent); color: black; font-weight: bold; }
-        .cal-day.other-month { color: #333; }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 999;
-        }
-
-        /* Interfaz Principal */
-        .card {
-            background: var(--card);
-            padding: 25px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
-
-        h2 { font-weight: 400; font-size: 1.2rem; margin-top: 0; }
-
-        .btn-calendar-trigger {
-            width: 100%;
-            padding: 15px;
-            background: var(--input);
-            border: 1px solid var(--border);
-            color: white;
-            border-radius: 12px;
-            text-align: left;
-            cursor: pointer;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .grid-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        label { font-size: 11px; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 5px; }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            background: var(--input);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        .search-bar {
-            margin-bottom: 15px;
-            background: var(--input);
-            border: none;
-            padding: 10px 15px;
-            font-size: 14px;
-        }
-
-        .btn-save {
-            background: var(--accent);
-            color: black;
-            font-weight: bold;
-            border: none;
-            padding: 15px;
-            border-radius: 12px;
-            width: 100%;
-            cursor: pointer;
-        }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        td, th { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-        .total-row { font-weight: bold; font-size: 1.5rem; text-align: center; padding: 20px; }
-
-        select { background: var(--input); color: white; border: 1px solid var(--border); padding: 5px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 10px; color: #555; border-bottom: 1px solid #222; }
+        td { padding: 10px; border-bottom: 1px solid #1a1a1a; }
+        
+        .btn-main { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-save { background: #fff; color: #000; }
+        .btn-calc-open { background: #222; color: #fff; margin-top: 10px; border: 1px solid #333; }
+        
+        .total-big { font-size: 2.5rem; text-align: center; margin: 10px 0; font-weight: 200; }
     </style>
 </head>
 <body>
 
-<div class="overlay" id="overlay" onclick="closeCalendar()"></div>
+<div class="overlay" id="overlay" onclick="closeModals()"></div>
 
 <div class="container">
     <div class="card">
-        <h2>Panel de Control</h2>
+        <h2 style="text-align: center; font-weight: 200;">REGISTRO</h2>
+        <button class="btn-main" style="background: #1a1a1a; color: white; border: 1px solid #333;" onclick="openCalendar()">
+            📅 <span id="current-date-text">Seleccionar Fecha</span>
+        </button>
+
+        <div class="grid-3">
+            <div><label>Nativos</label><input type="number" id="n" value="0" oninput="updateTotal()"></div>
+            <div><label>Brasileros</label><input type="number" id="b" value="0" oninput="updateTotal()"></div>
+            <div><label>Zoom</label><input type="number" id="z" value="0" oninput="updateTotal()"></div>
+        </div>
+
+        <div class="total-big" id="total-display">0</div>
         
-        <div class="btn-calendar-trigger" onclick="openCalendar()">
-            <span id="selected-date-display">Seleccionar Fecha</span>
-            <span>📅</span>
-        </div>
-
-        <div class="grid-inputs">
-            <div><label>Nativos</label><input type="number" id="nativos" value="0" oninput="calc()"></div>
-            <div><label>Brasileros</label><input type="number" id="brasileros" value="0" oninput="calc()"></div>
-            <div><label>Zoom</label><input type="number" id="zoom" value="0" oninput="calc()"></div>
-        </div>
-
-        <div class="total-row" id="total-val">0</div>
-        <button class="btn-save" onclick="save()">GUARDAR REGISTRO</button>
+        <button class="btn-main btn-save" onclick="saveData()">GUARDAR REGISTRO</button>
+        <button class="btn-main btn-calc-open" onclick="openCalc()">CALCULADORA</button>
     </div>
 
     <div class="card">
-        <label>Buscar en historial</label>
-        <input type="text" id="search" class="search-bar" placeholder="Escribe una fecha (AAAA-MM-DD)..." oninput="renderAll()">
-        
-        <div style="height: 200px;">
-            <canvas id="chart"></canvas>
-        </div>
+        <canvas id="mainChart" style="max-height: 200px;"></canvas>
     </div>
 
     <div class="card">
-        <h2>Historial Pasado</h2>
-        <table id="historyTable">
-            <thead><tr><th>Fecha</th><th>Total</th><th>Acción</th></tr></thead>
+        <h3 class="section-title week-title">ENTRE SEMANA (Lun - Vie)</h3>
+        <table id="table-week">
+            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th></tr></thead>
+            <tbody></tbody>
+        </table>
+
+        <h3 class="section-title">FIN DE SEMANA (Sáb - Dom)</h3>
+        <table id="table-weekend">
+            <thead><tr><th>Fecha</th><th>N/B/Z</th><th>Total</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
 </div>
 
-<div id="calendar-modal">
-    <div class="calendar-header">
-        <select id="cal-month" onchange="buildCalendar()"></select>
-        <select id="cal-year" onchange="buildCalendar()"></select>
-        <button onclick="closeCalendar()" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
+<div id="modal-cal" class="modal">
+    <div class="cal-header">
+        <button onclick="changeMonth(-1)"><</button>
+        <span id="cal-month-year">Abril 2026</span>
+        <button onclick="changeMonth(1)">></button>
     </div>
-    <div class="calendar-grid" id="calendar-days"></div>
+    <div class="days-grid" id="cal-grid">
+        <div class="day-name">Do</div><div class="day-name">Lu</div><div class="day-name">Ma</div>
+        <div class="day-name">Mi</div><div class="day-name">Ju</div><div class="day-name">Vi</div><div class="day-name">Sa</div>
+    </div>
+</div>
+
+<div id="modal-calc" class="modal">
+    <div class="calc-screen" id="calc-screen">0</div>
+    <div class="calc-grid">
+        <button class="btn-calc op" onclick="clearCalc()">C</button>
+        <button class="btn-calc op" onclick="press('/')">/</button>
+        <button class="btn-calc op" onclick="press('*')">×</button>
+        <button class="btn-calc op" onclick="press('-')">-</button>
+        <button class="btn-calc" onclick="press('7')">7</button>
+        <button class="btn-calc" onclick="press('8')">8</button>
+        <button class="btn-calc" onclick="press('9')">9</button>
+        <button class="btn-calc op" onclick="press('+')">+</button>
+        <button class="btn-calc" onclick="press('4')">4</button>
+        <button class="btn-calc" onclick="press('5')">5</button>
+        <button class="btn-calc" onclick="press('6')">6</button>
+        <button class="btn-calc op" onclick="solve()">=</button>
+        <button class="btn-calc" onclick="press('1')">1</button>
+        <button class="btn-calc" onclick="press('2')">2</button>
+        <button class="btn-calc" onclick="press('3')">3</button>
+        <button class="btn-calc" onclick="press('0')">0</button>
+    </div>
+    <button class="btn-main btn-calc-open" onclick="closeModals()">CERRAR</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('stats_v3')) || {};
+    let db = JSON.parse(localStorage.getItem('stats_v4')) || {};
     let selectedDate = new Date().toISOString().split('T')[0];
+    let viewDate = new Date();
     let chart;
 
-    // Inicializar selectores de calendario
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const monthSelect = document.getElementById('cal-month');
-    const yearSelect = document.getElementById('cal-year');
+    function openCalendar() { document.getElementById('modal-cal').style.display='block'; document.getElementById('overlay').style.display='block'; renderCalendar(); }
+    function openCalc() { document.getElementById('modal-calc').style.display='block'; document.getElementById('overlay').style.display='block'; }
+    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(el => el.style.display='none'); }
 
-    months.forEach((m, i) => monthSelect.innerHTML += `<option value="${i}">${m}</option>`);
-    for(let y=2024; y<=3030; y++) yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
-
-    function openCalendar() {
-        document.getElementById('calendar-modal').style.display = 'block';
-        document.getElementById('overlay').style.display = 'block';
-        buildCalendar();
-    }
-
-    function closeCalendar() {
-        document.getElementById('calendar-modal').style.display = 'none';
-        document.getElementById('overlay').style.display = 'none';
-    }
-
-    function buildCalendar() {
-        const m = parseInt(monthSelect.value);
-        const y = parseInt(yearSelect.value);
-        const grid = document.getElementById('calendar-days');
-        grid.innerHTML = '';
+    // Lógica del Calendario
+    function renderCalendar() {
+        const grid = document.getElementById('cal-grid');
+        const monthYear = document.getElementById('cal-month-year');
+        grid.innerHTML = '<div class="day-name">Do</div><div class="day-name">Lu</div><div class="day-name">Ma</div><div class="day-name">Mi</div><div class="day-name">Ju</div><div class="day-name">Vi</div><div class="day-name">Sa</div>';
+        
+        const y = viewDate.getFullYear();
+        const m = viewDate.getMonth();
+        monthYear.innerText = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewDate);
 
         const firstDay = new Date(y, m, 1).getDay();
-        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const daysInMonth = new Date(y, m+1, 0).getDate();
 
-        // Celdas vacías
-        for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="cal-day other-month"></div>`;
-
+        for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
         for(let d=1; d<=daysInMonth; d++) {
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const activeClass = (dateStr === selectedDate) ? 'active' : '';
-            grid.innerHTML += `<div class="cal-day ${activeClass}" onclick="selectDate('${dateStr}')">${d}</div>`;
+            const className = dateStr === selectedDate ? 'day-cell active' : 'day-cell';
+            grid.innerHTML += `<div class="${className}" onclick="selectDate('${dateStr}')">${d}</div>`;
         }
     }
 
     function selectDate(date) {
         selectedDate = date;
-        document.getElementById('selected-date-display').innerText = date;
+        document.getElementById('current-date-text').innerText = date;
         if(db[date]) {
-            document.getElementById('nativos').value = db[date].n;
-            document.getElementById('brasileros').value = db[date].b;
-            document.getElementById('zoom').value = db[date].z;
+            document.getElementById('n').value = db[date].n;
+            document.getElementById('b').value = db[date].b;
+            document.getElementById('z').value = db[date].z;
         } else {
-            document.getElementById('nativos').value = 0;
-            document.getElementById('brasileros').value = 0;
-            document.getElementById('zoom').value = 0;
+            document.getElementById('n').value = 0; document.getElementById('b').value = 0; document.getElementById('z').value = 0;
         }
-        calc();
-        closeCalendar();
+        updateTotal();
+        closeModals();
     }
 
-    function calc() {
-        const n = +document.getElementById('nativos').value || 0;
-        const b = +document.getElementById('brasileros').value || 0;
-        const z = +document.getElementById('zoom').value || 0;
-        document.getElementById('total-val').innerText = n + b + z;
+    function changeMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); renderCalendar(); }
+
+    // Calculadora
+    let calcExpr = "";
+    function press(v) { calcExpr += v; document.getElementById('calc-screen').innerText = calcExpr; }
+    function clearCalc() { calcExpr = ""; document.getElementById('calc-screen').innerText = "0"; }
+    function solve() { try { calcExpr = eval(calcExpr).toString(); document.getElementById('calc-screen').innerText = calcExpr; } catch { clearCalc(); } }
+
+    function updateTotal() {
+        const n = +document.getElementById('n').value;
+        const b = +document.getElementById('b').value;
+        const z = +document.getElementById('z').value;
+        document.getElementById('total-display').innerText = n + b + z;
     }
 
-    function save() {
-        const total = +document.getElementById('total-val').innerText;
+    function saveData() {
         db[selectedDate] = {
-            n: +document.getElementById('nativos').value,
-            b: +document.getElementById('brasileros').value,
-            z: +document.getElementById('zoom').value,
-            total: total
+            n: +document.getElementById('n').value,
+            b: +document.getElementById('b').value,
+            z: +document.getElementById('z').value,
+            total: +document.getElementById('total-display').innerText
         };
-        localStorage.setItem('stats_v3', JSON.stringify(db));
+        localStorage.setItem('stats_v4', JSON.stringify(db));
         renderAll();
-        alert("Guardado!");
-    }
-
-    function deleteEntry(date) {
-        if(confirm('¿Borrar?')) { delete db[date]; localStorage.setItem('stats_v3', JSON.stringify(db)); renderAll(); }
     }
 
     function renderAll() {
-        const searchTerm = document.getElementById('search').value;
-        const tbody = document.querySelector('#historyTable tbody');
-        tbody.innerHTML = '';
+        const weekBody = document.querySelector('#table-week tbody');
+        const weekendBody = document.querySelector('#table-weekend tbody');
+        weekBody.innerHTML = ''; weekendBody.innerHTML = '';
 
-        const keys = Object.keys(db).sort().reverse();
-        const filteredKeys = keys.filter(k => k.includes(searchTerm));
+        const dates = Object.keys(db).sort().reverse();
+        const chartData = { labels: [], totals: [] };
 
-        filteredKeys.forEach(k => {
-            tbody.innerHTML += `<tr>
-                <td>${k}</td>
-                <td>${db[k].total}</td>
-                <td><button onclick="deleteEntry('${k}')" style="background:red; border:none; color:white; border-radius:4px; cursor:pointer;">X</button></td>
-            </tr>`;
+        dates.forEach(date => {
+            const d = db[date];
+            const dayOfWeek = new Date(date + "T00:00:00").getDay(); // 0=Dom, 6=Sab
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+            
+            const row = `<tr><td>${date}</td><td>${d.n}/${d.b}/${d.z}</td><td style="font-weight:bold">${d.total}</td></tr>`;
+            
+            if(isWeekend) weekendBody.innerHTML += row;
+            else weekBody.innerHTML += row;
+
+            chartData.labels.push(date);
+            chartData.totals.push(d.total);
         });
 
-        // Gráfica de totales
-        const ctx = document.getElementById('chart').getContext('2d');
+        // Actualizar Gráfica
+        const ctx = document.getElementById('mainChart').getContext('2d');
         if(chart) chart.destroy();
         chart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: keys.slice(0, 7).reverse(),
-                datasets: [{ label: 'Totales', data: keys.slice(0, 7).reverse().map(k => db[k].total), backgroundColor: '#fff' }]
+                labels: chartData.labels.slice(0,10).reverse(),
+                datasets: [{ label: 'Total', data: chartData.totals.slice(0,10).reverse(), backgroundColor: '#fff' }]
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#222' } } } }
+            options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#222' } } } }
         });
     }
 
-    // Al iniciar
-    monthSelect.value = new Date().getMonth();
-    yearSelect.value = new Date().getFullYear();
+    // Inicio
     selectDate(selectedDate);
     renderAll();
-
 </script>
 </body>
 </html>
