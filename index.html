@@ -263,6 +263,17 @@
     function cEval() { try { cExp = eval(cExp).toString(); document.getElementById('calc-res').innerText = cExp; } catch { cClear(); } }
 
     document.getElementById('label-fecha').innerText = selDate;
+    if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .then(() => {
+                console.log("PWA instalada correctamente");
+            })
+            .catch(error => {
+                console.error("Error al registrar la PWA:", error);
+            });
+    });
+}
 </script>
 </body>
 </html>
